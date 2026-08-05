@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F1 Tyre Degradation Predictor</title>
+    <style>
+        :root {
+            --bg-color: #080a0d;
+            --card-bg: #11151c;
+            --card-border: #1e2632;
+            --accent-red: #e10600;
+            --text-main: #ffffff;
+            --text-sub: #828a99;
+            --input-bg: #090c10;
+            --input-border: #222b38;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1240px;
+            margin: 0 auto;
+        }
+
+        /* Top Header */
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .brand img {
+            height: 36px;
+            width: auto;
+            display: block;
+        }
+
+        .insights-link {
+            border: 1px solid var(--accent-red);
+            color: var(--accent-red);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+
+        .insights-link:hover {
+            background: rgba(225, 6, 0, 0.1);
+        }
+
+        /* Hero Banner */
+        .hero {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 16px;
+            min-height: 140px;
+            display: flex;
+            align-items: center;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+        }
+
+        .hero video {
+            position: absolute;
+            top: 0;
+            right: 0;
+            height: 100%;
+            width: 55%;
+            object-fit: cover;
+            mask-image: linear-gradient(to left, black 50%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to left, black 50%, transparent 100%);
+            opacity: 0.9;
+        }
+
+        .hero-overlay {
+            position: relative;
+            z-index: 2;
+            padding: 24px 32px;
+            max-width: 600px;
+        }
+
+        .hero h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 4px;
+        }
+
+        .hero h1 .accent { color: var(--accent-red); }
+        .hero p { color: var(--text-sub); font-size: 0.9rem; }
+
+        /* Stats Bar */
+        .badges {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .badge {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            min-width: 0; /* Prevents flex children from overflowing */
+        }
+
+        .badge .icon {
+            color: var(--accent-red);
+            flex-shrink: 0;
+        }
+
+        .badge .badge-label {
+            font-size: 0.75rem;
+            color: var(--text-sub);
+            margin-bottom: 2px;
+        }
+
+        .badge .badge-value {
+            font-size: 1.1rem; /* Reduced slightly to fit long model names nicely */
+            font-weight: 700;
+            color: var(--accent-red);
+            word-break: break-word; 
+            letter-spacing: -0.01em;
+        }
+
+        .badge .badge-value.text-white {
+            color: #ffffff;
+        }
+
+        /* Main Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1.15fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .card h2 {
+            font-size: 0.8rem;
+            margin-bottom: 16px;
+            color: var(--text-main);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+        }
+
+        .card h2 .icon { color: var(--accent-red); }
+
+        /* Form Inputs */
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.8rem;
+            color: var(--text-sub);
+        }
+
+        select, input[type="number"] {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--input-border);
+            background: var(--input-bg);
+            color: var(--text-main);
+            font-size: 0.88rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        select:focus, input[type="number"]:focus {
+            border-color: var(--accent-red);
+        }
+
+        button {
+            margin-top: 16px;
+            width: 100%;
+            padding: 12px;
+            background: var(--accent-red);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            cursor: pointer;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+
+        button:hover { background: #ff1a0f; }
+
+        /* Results & Context */
+        .result-box {
+            background: linear-gradient(180deg, rgba(225, 6, 0, 0.15) 0%, rgba(17, 21, 28, 1) 100%);
+            border: 1px solid rgba(225, 6, 0, 0.4);
+            border-radius: 10px;
+            padding: 24px;
+            text-align: center;
+            margin-bottom: 14px;
+        }
+
+        .result-label {
+            font-size: 0.7rem;
+            color: var(--text-sub);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 6px;
+        }
+
+        .result-value {
+            font-size: 3.2rem;
+            font-weight: 800;
+            color: var(--accent-red);
+            line-height: 1;
+        }
+
+        .result-unit {
+            color: var(--text-sub);
+            font-size: 0.85rem;
+            margin-top: 4px;
+        }
+
+        .context-box {
+            padding: 12px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            font-size: 0.8rem;
+            color: var(--text-sub);
+            text-align: center;
+            margin-bottom: 14px;
+        }
+
+        .context-box b { color: var(--accent-red); }
+
+        .explain-box {
+            padding: 12px;
+            border-radius: 8px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            font-size: 0.78rem;
+            color: var(--text-sub);
+            line-height: 1.45;
+        }
+
+        .explain-box .title {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-main);
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        /* Feature Importance */
+        .feat-note {
+            font-size: 0.78rem;
+            color: var(--text-sub);
+            margin-bottom: 14px;
+            line-height: 1.4;
+        }
+
+        .feat-row { margin-bottom: 10px; }
+
+        .feat-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.78rem;
+            color: var(--text-main);
+            margin-bottom: 4px;
+        }
+
+        .feat-bar-bg {
+            background: var(--input-bg);
+            border-radius: 4px;
+            height: 6px;
+            overflow: hidden;
+        }
+
+        .feat-bar-fill {
+            background: var(--accent-red);
+            height: 100%;
+            border-radius: 4px;
+        }
+
+        .feat-total {
+            margin-top: 16px;
+            font-size: 0.72rem;
+            color: var(--text-sub);
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .footer-item {
+            font-size: 0.8rem;
+            color: var(--text-sub);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .footer-item .icon { color: var(--accent-red); flex-shrink: 0; }
+        .footer-item b { color: var(--text-main); display: block; font-size: 0.82rem; }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 1024px) {
+            .grid { 
+                grid-template-columns: 1fr; 
+            }
+            .badges { 
+                grid-template-columns: repeat(2, 1fr); 
+            }
+            .hero video { 
+                width: 100%; 
+                opacity: 0.3; 
+            }
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 12px;
+            }
+
+            .topbar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .badges { 
+                grid-template-columns: 1fr; 
+            }
+
+            .badge {
+                padding: 12px;
+            }
+
+            .badge .badge-value {
+                font-size: 1rem;
+            }
+
+            .hero h1 {
+                font-size: 1.5rem;
+            }
+
+            .hero-overlay {
+                padding: 16px;
+            }
+
+            .result-value {
+                font-size: 2.5rem;
+            }
+
+            .footer {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- Topbar -->
+    <div class="topbar">
+        <div class="brand"><img src="{{ url_for('static', filename='logo.png') }}" alt="F1 Tyre Predictor logo"></div>
+        <a class="insights-link" href="https://github.com" target="_blank">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            INSIGHTS.md ↗
+        </a>
+    </div>
+
+    <!-- Hero Section -->
+    <div class="hero">
+        <video autoplay muted loop playsinline>
+            <source src="{{ url_for('static', filename='car-video.mp4') }}" type="video/mp4">
+        </video>
+        <div class="hero-overlay">
+            <h1>F1 Tyre Degradation <span class="accent">Predictor</span></h1>
+            <p>Predicts lap time based on tyre wear and track conditions using machine learning.</p>
+        </div>
+    </div>
+
+    <!-- Stats Badges -->
+    <div class="badges">
+        <div class="badge">
+            <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-2.04Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-2.04Z"/></svg>
+            <div>
+                <div class="badge-label">Model Type</div>
+                <div class="badge-value text-white">{{ model_name }}</div>
+            </div>
+        </div>
+        <div class="badge">
+            <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+            <div>
+                <div class="badge-label">R&sup2; Score</div>
+                <div class="badge-value">0.978</div>
+            </div>
+        </div>
+        <div class="badge">
+            <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+            <div>
+                <div class="badge-label">Total Laps Trained</div>
+                <div class="badge-value">{{ "{:,}".format(total_laps) }}</div>
+            </div>
+        </div>
+        <div class="badge">
+            <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22V4a1 1 0 0 1 1-1h13.5a1 1 0 0 1 .8 1.6L15 10l4.3 5.4a1 1 0 0 1-.8 1.6H5"/></svg>
+            <div>
+                <div class="badge-label">Races</div>
+                <div class="badge-value">{{ n_races }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Workspace -->
+    <div class="grid">
+
+        <!-- Column 1: Input Parameters -->
+        <div class="card">
+            <h2>
+                <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+                1. Input Parameters
+            </h2>
+            <form action="/predict" method="post">
+                <div class="form-group">
+                    <label for="race">Track / Race</label>
+                    <select name="race" id="race" required>
+                        {% for r in races %}
+                            <option value="{{ r }}" {% if selected_race == r %}selected{% endif %}>{{ r }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="compound">Tyre Compound</label>
+                    <select name="compound" id="compound" required>
+                        {% for c in compounds %}
+                            <option value="{{ c }}" {% if selected_compound == c %}selected{% endif %}>{{ c }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="tyre_life">Tyre Age (laps)</label>
+                    <input type="number" name="tyre_life" id="tyre_life" min="1" max="60" value="{{ selected_tyre_life or 10 }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="stint">Stint Number</label>
+                    <input type="number" name="stint" id="stint" min="1" max="4" value="{{ selected_stint or 1 }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="lap_number">Lap Number</label>
+                    <input type="number" name="lap_number" id="lap_number" min="1" max="80" value="{{ selected_lap_number or 15 }}" required>
+                </div>
+
+                <button type="submit">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M5 3 2 6"/><path d="m22 6-3-3"/></svg>
+                    Predict Lap Time
+                </button>
+            </form>
+        </div>
+
+        <!-- Column 2: Prediction Result -->
+        <div class="card">
+            <h2>
+                <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M5 3 2 6"/><path d="m22 6-3-3"/></svg>
+                2. Predicted Lap Time
+            </h2>
+            {% if prediction is not none %}
+                <div class="result-box">
+                    <div class="result-label">Predicted Lap Time</div>
+                    <div class="result-value">{{ prediction }}</div>
+                    <div class="result-unit">seconds</div>
+                </div>
+                <div class="context-box">
+                    <strong>CONTEXT</strong><br>
+                    <b>{{ selected_race }}</b> &bull; <b>{{ selected_compound }}</b> &bull; Tyre Age: {{ selected_tyre_life|int }} laps<br>
+                    Stint: {{ selected_stint|int }} &bull; Lap: {{ selected_lap_number|int }}
+                </div>
+            {% else %}
+                <div class="result-box">
+                    <div class="result-label">Predicted Lap Time</div>
+                    <div class="result-value">--.---</div>
+                    <div class="result-unit">seconds</div>
+                </div>
+            {% endif %}
+
+            <div class="explain-box">
+                <div class="title">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                    What does this mean?
+                </div>
+                This is the predicted lap time (in seconds) for the selected inputs, based on a Random Forest model built from {{ "{:,}".format(total_laps) }} laps across {{ n_races }} races (80% used for training, 20% held out for testing).
+            </div>
+        </div>
+
+        <!-- Column 3: Feature Importance -->
+        <div class="card">
+            <h2>
+                <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+                3. Feature Importance (Top Factors)
+            </h2>
+            <p class="feat-note">The model gives more importance to these factors when predicting lap time.</p>
+            
+            {% for f in feature_importance %}
+            <div class="feat-row">
+                <div class="feat-label"><span>{{ f.name }}</span><span>{{ f.pct }}%</span></div>
+                <div class="feat-bar-bg"><div class="feat-bar-fill" style="width: {{ f.pct }}%;"></div></div>
+            </div>
+            {% endfor %}
+            
+            <div class="feat-total">Total features considered: {{ n_features }}</div>
+        </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <div class="footer-item">
+            <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+        <div><b>DATA SOURCE</b>FastF1 API &bull; 2024 Season &bull; Includes {{ n_races }} Races &bull; {{ "{:,}".format(total_laps) }} Laps &bull; Race Data</div>
+    </div>
+
+</div>
+
+</body>
+</html>
