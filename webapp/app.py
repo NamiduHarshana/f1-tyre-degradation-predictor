@@ -15,7 +15,7 @@ karapu eka) auto-fill karanawa - user eka select karanne Race, Compound,
 Tyre Age, Stint, Lap Number witharai.
 """
 
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, abort
 import pandas as pd
 import joblib
 import os
@@ -112,11 +112,18 @@ def index():
 
 @app.route("/predict", methods=["POST"])
 def predict():
-    race = request.form["race"]
-    compound = request.form["compound"]
-    tyre_life = float(request.form["tyre_life"])
-    stint = float(request.form["stint"])
-    lap_number = float(request.form["lap_number"])
+    race = request.form.get("race")
+    compound = request.form.get("compound")
+
+    if race not in RACES or compound not in COMPOUNDS:
+        abort(400, description="Invalid race or compound.")
+
+    try:
+        tyre_life = float(request.form["tyre_life"])
+        stint = float(request.form["stint"])
+        lap_number = float(request.form["lap_number"])
+    except (KeyError, ValueError):
+        abort(400, description="Invalid or missing numeric input.")
 
     X = build_feature_row(race, compound, tyre_life, stint, lap_number)
     predicted_time = model.predict(X)[0]
@@ -134,4 +141,4 @@ def predict():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5001)
+    app.run(port=5001)
